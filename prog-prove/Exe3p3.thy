@@ -6,10 +6,6 @@ inductive star :: "('a \<Rightarrow> 'a \<Rightarrow> bool) \<Rightarrow> 'a \<R
 refl: "star r x x" |
 step: "r x y \<Longrightarrow> star r y z \<Longrightarrow> star r x z"
 
-inductive star' :: "('a \<Rightarrow> 'a \<Rightarrow> bool) \<Rightarrow> 'a \<Rightarrow> 'a \<Rightarrow> bool" where
-refl': "star' r x x" |
-step': "star' r x y \<Longrightarrow> r y z \<Longrightarrow> star' r x z"
-
 lemma star_post: "star r x y \<Longrightarrow> r y z \<Longrightarrow> star r x z"
   apply(induction rule: star.induct)
    apply(auto simp add: refl step)
@@ -19,6 +15,10 @@ lemma star_trans: "star r x y \<Longrightarrow> star r y z \<Longrightarrow> sta
   apply(induction rule: star.induct)
    apply(auto simp add: step)
   done
+
+inductive star' :: "('a \<Rightarrow> 'a \<Rightarrow> bool) \<Rightarrow> 'a \<Rightarrow> 'a \<Rightarrow> bool" where
+refl': "star' r x x" |
+step': "star' r x y \<Longrightarrow> r y z \<Longrightarrow> star' r x z"
 
 lemma "star' r x y \<Longrightarrow> star r x y"
   apply(induction rule: star'.induct)
