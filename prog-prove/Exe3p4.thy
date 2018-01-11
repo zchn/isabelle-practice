@@ -23,5 +23,10 @@ iter_step: "r x y \<Longrightarrow> iter r n y z \<Longrightarrow> iter r (Suc n
 thm exI exE 
 
 lemma "star r x y \<Longrightarrow> \<exists>n. iter r n x y"
-  apply(induction rule: star.induct)
-   apply(auto simp add: refl step iter_refl iter_step algebra_simps)
+proof (induction rule: star.induct)
+  case (refl r x)
+  then show ?case by (rule iter_refl)
+next
+  case (step r x y z)
+  then show ?case sorry
+qed
