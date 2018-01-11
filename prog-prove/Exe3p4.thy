@@ -25,7 +25,8 @@ thm exI exE
 lemma "star r x y \<Longrightarrow> \<exists>n. iter r n x y"
 proof (induction rule: star.induct)
   case (refl r x)
-  then show ?case by (rule iter_refl)
+  then show ?case
+  
 next
   case (step r x y z)
   then show ?case sorry
