@@ -13,6 +13,3 @@ proof (rule ccontr)
   hence "x = y" using A and `A x y` by blast
   thus False using `T y x` and `\<not>T x y` by blast
 qed
-
-
-  
