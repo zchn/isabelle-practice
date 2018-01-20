@@ -73,7 +73,7 @@ text \<open>
 \<close>
 
 lemma "A \<longrightarrow> A"
-  oops
+  by simp
 
 text \<open>
   Proof by a single rule may be abbreviated as double-dot.
@@ -96,12 +96,16 @@ text \<open>
 \<close>
 
 lemma "A \<longrightarrow> B \<longrightarrow> A"
-  oops
+proof (intro impI)
+  assume A
+  show A by fact
+qed
+  
 
 text \<open>Again, the body may be collapsed.\<close>
 
 lemma "A \<longrightarrow> B \<longrightarrow> A"
-  oops
+  by (intro impI)
 
 text \<open>
   Just like \<open>rule\<close>, the \<open>intro\<close> and \<open>elim\<close> proof methods pick standard
@@ -131,7 +135,15 @@ text \<open>
 \<close>
 
 lemma "A \<and> B \<longrightarrow> B \<and> A"
-  oops
+proof
+  assume ab: "A \<and> B"
+  show "B \<and> A"
+  proof
+    show B by (rule conjunct2) fact
+  next
+    from ab show A ..
+  qed
+qed
 
 text \<open>
   Above, the projection rules \<open>conjunct1\<close> / \<open>conjunct2\<close> had to be named
@@ -142,7 +154,14 @@ text \<open>
 \<close>
 
 lemma "A \<and> B \<longrightarrow> B \<and> A"
-  oops
+proof
+  assume ab: "A \<and> B"
+  show "B \<and> A"
+  proof
+    from ab show B ..
+    from ab show A ..
+  qed
+qed
 
 text \<open>
   In the next version, we move the forward step one level upwards.
@@ -154,7 +173,14 @@ text \<open>
 \<close>
 
 lemma "A \<and> B \<longrightarrow> B \<and> A"
-  oops
+proof
+  assume "A \<and> B"
+  then show "B \<and> A"
+  proof
+    assume B A
+    then show ?thesis ..
+  qed
+qed
 
 text \<open>
   In the subsequent version we flatten the structure of the main body by doing
@@ -163,7 +189,13 @@ text \<open>
 \<close>
 
 lemma "A \<and> B \<longrightarrow> B \<and> A"
-  oops
+proof
+  assume ab: "A \<and> B"
+  from ab have A ..
+  from ab have B ..
+  from \<open>B\<close> \<open>A\<close> show "B \<and> A" ..
+qed
+
 
 text \<open>
   We can still push forward-reasoning a bit further, even at the risk of
@@ -172,7 +204,15 @@ text \<open>
 \<close>
 
 lemma "A \<and> B \<longrightarrow> B \<and> A"
-  oops
+proof -
+  {
+    assume ab: "A \<and> B"
+    from ab have A ..
+    from ab have B ..
+    from \<open>B\<close> \<open>A\<close> have "B \<and> A" ..
+  }
+  then show ?thesis ..
+qed
 
 text \<open>
   \<^medskip>
@@ -195,8 +235,14 @@ text \<open>
 \<close>
 
 lemma "A \<and> B \<longrightarrow> B \<and> A"
-  oops
-
+proof
+  assume "A \<and> B"
+  then show "B \<and> A"
+  proof
+    assume B A
+    then show ?thesis ..
+  qed
+qed
 
 subsection \<open>A few examples from ``Introduction to Isabelle''\<close>
 
@@ -215,7 +261,10 @@ text \<open>
 \<close>
 
 lemma "P \<or> P \<longrightarrow> P"
-  oops
+proof
+  assume "P \<or> P"
+  then show "P" ..
+qed
 
 text \<open>
   Case splits are \<^emph>\<open>not\<close> hardwired into the Isar language as a special
@@ -241,7 +290,15 @@ text \<open>
 \<close>
 
 lemma "P \<or> P \<longrightarrow> P"
-  oops
+proof
+  assume "P \<or> P"
+  then show P
+  proof
+    assume P
+    show P by fact
+    show P by fact
+  qed
+qed
 
 text \<open>Again, the rather vacuous body of the proof may be collapsed.
   Thus the case analysis degenerates into two assumption steps, which
@@ -249,7 +306,10 @@ text \<open>Again, the rather vacuous body of the proof may be collapsed.
   double-dot proof as follows.\<close>
 
 lemma "P \<or> P \<longrightarrow> P"
-  oops
+proof
+  assume "P \<or> P"
+  then show P ..
+qed
 
 subsubsection \<open>A quantifier proof\<close>
 
@@ -266,8 +326,17 @@ text \<open>
 \<close>
 
 lemma "(\<exists>x. P (f x)) \<longrightarrow> (\<exists>y. P y)"
-  oops
-  
+proof
+  assume "\<exists>x. P (f x)"
+  then show "\<exists>y. P y"
+  proof
+    fix a
+    assume "P (f a)" (is "P ?wit")
+    then show ?thesis by (intro exI [of P ?wit])
+  qed
+qed
+
+
 text \<open>
   While explicit rule instantiation may occasionally improve readability of
   certain aspects of reasoning, it is usually quite redundant. Above, the
@@ -277,7 +346,15 @@ text \<open>
 \<close>
 
 lemma "(\<exists>x. P (f x)) \<longrightarrow> (\<exists>y. P y)"
-  oops
+proof
+  assume "\<exists>x. P (f x)"
+  then show "\<exists>y. P y"
+  proof
+    fix a
+    assume "P (f a)"
+    then show ?thesis ..
+  qed
+qed
 
 text \<open>
   Explicit \<open>\<exists>\<close>-elimination as seen above can become quite cumbersome in
@@ -286,7 +363,11 @@ text \<open>
 \<close>
 
 lemma "(\<exists>x. P (f x)) \<longrightarrow> (\<exists>y. P y)"
-  oops
+proof
+  assume "\<exists>x. P (f x)"
+  then obtain a where "P (f a)" ..
+  then show "\<exists>y. P y" ..
+qed
   
 text \<open>
   Technically, \<^theory_text>\<open>obtain\<close> is similar to \<^theory_text>\<open>fix\<close> and \<^theory_text>\<open>assume\<close> together with a
@@ -306,6 +387,9 @@ text \<open>
 \<close>
 
 theorem conjE: "A \<and> B \<Longrightarrow> (A \<Longrightarrow> B \<Longrightarrow> C) \<Longrightarrow> C"
-  oops
+proof -
+  assume "A \<and> B"
+  then show "(A \<Longrightarrow> B \<Longrightarrow> C) \<Longrightarrow> C" ..
+qed
 
 end
