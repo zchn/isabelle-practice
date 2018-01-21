@@ -40,13 +40,7 @@ axiomatization conj :: "o \<Rightarrow> o \<Rightarrow> o"  (infixr "\<and>" 35)
 theorem conjE [elim]:
   assumes "A \<and> B"
   obtains A and B
-proof
-  from \<open>A \<and> B\<close> show A
-    by (rule conjD1)
-  from \<open>A \<and> B\<close> show B
-    by (rule conjD2)
-qed
-
+  oops
 
 axiomatization disj :: "o \<Rightarrow> o \<Rightarrow> o"  (infixr "\<or>" 30)
   where disjE [elim]: "A \<or> B \<Longrightarrow> (A \<Longrightarrow> C) \<Longrightarrow> (B \<Longrightarrow> C) \<Longrightarrow> C"
@@ -69,12 +63,7 @@ theorem notI [intro]: "(A \<Longrightarrow> \<bottom>) \<Longrightarrow> \<not> 
 
 theorem notE [elim]: "\<not> A \<Longrightarrow> A \<Longrightarrow> B"
   unfolding not_def
-proof -
-  assume "A \<longrightarrow> \<bottom>" and A
-  then have \<bottom> ..
-  then show B ..
-qed
-
+  oops
 
 definition iff :: "o \<Rightarrow> o \<Rightarrow> o"  (infixr "\<longleftrightarrow>" 25)
   where "A \<longleftrightarrow> B \<equiv> (A \<longrightarrow> B) \<and> (B \<longrightarrow> A)"
@@ -84,31 +73,17 @@ theorem iffI [intro]:
     and "B \<Longrightarrow> A"
   shows "A \<longleftrightarrow> B"
   unfolding iff_def
-proof
-  from \<open>A \<Longrightarrow> B\<close> show "A \<longrightarrow> B" ..
-  from \<open>B \<Longrightarrow> A\<close> show "B \<longrightarrow> A" ..
-qed
-
+  oops
+  
 theorem iff1 [elim]:
   assumes "A \<longleftrightarrow> B" and A
   shows B
-proof -
-  from \<open>A \<longleftrightarrow> B\<close> have "(A \<longrightarrow> B) \<and> (B \<longrightarrow> A)"
-    unfolding iff_def .
-  then have "A \<longrightarrow> B" ..
-  from this and \<open>A\<close> show B ..
-qed
-
+  oops
+  
 theorem iff2 [elim]:
   assumes "A \<longleftrightarrow> B" and B
   shows A
-proof -
-  from \<open>A \<longleftrightarrow> B\<close> have "(A \<longrightarrow> B) \<and> (B \<longrightarrow> A)"
-    unfolding iff_def .
-  then have "B \<longrightarrow> A" ..
-  from this and \<open>B\<close> show A ..
-qed
-
+  oops
 
 subsection \<open>Equality\<close>
 
@@ -120,12 +95,7 @@ theorem trans [trans]: "x = y \<Longrightarrow> y = z \<Longrightarrow> x = z"
   by (rule subst)
 
 theorem sym [sym]: "x = y \<Longrightarrow> y = x"
-proof -
-  assume "x = y"
-  from this and refl show "y = x"
-    by (rule subst)
-qed
-
+  oops
 
 subsection \<open>Quantifiers\<close>
 
@@ -139,22 +109,9 @@ axiomatization Ex :: "(i \<Rightarrow> o) \<Rightarrow> o"  (binder "\<exists>" 
 
 
 lemma "(\<exists>x. P (f x)) \<longrightarrow> (\<exists>y. P y)"
-proof
-  assume "\<exists>x. P (f x)"
-  then obtain x where "P (f x)" ..
-  then show "\<exists>y. P y" ..
-qed
-
+  oops
+  
 lemma "(\<exists>x. \<forall>y. R x y) \<longrightarrow> (\<forall>y. \<exists>x. R x y)"
-proof
-  assume "\<exists>x. \<forall>y. R x y"
-  then obtain x where "\<forall>y. R x y" ..
-  show "\<forall>y. \<exists>x. R x y"
-  proof
-    fix y
-    from \<open>\<forall>y. R x y\<close> have "R x y" ..
-    then show "\<exists>x. R x y" ..
-  qed
-qed
-
+  oops
+  
 end
