@@ -80,7 +80,6 @@ primrec exec :: "(('adr, 'val) instr) list \<Rightarrow> 'val list \<Rightarrow>
 definition execute :: "(('adr, 'val) instr) list \<Rightarrow> ('adr \<Rightarrow> 'val) \<Rightarrow> 'val"
   where "execute instrs env = hd (exec instrs [] env)"
 
-
 subsection \<open>Compiler\<close>
 
 text \<open>
@@ -103,10 +102,40 @@ text \<open>
 lemma exec_append:
   "exec (xs @ ys) stack env =
     exec ys (exec xs stack env) env"
-  oops
+proof (induct xs arbitrary: stack ys)
+  case Nil
+  then show ?case by auto
+next
+  case (Cons a xs)
+  then show ?case 
+  proof (induct a)
+    case (Const x)
+    then show ?case by auto
+  next
+    case (Load x)
+    then show ?case by auto
+  next 
+    case (Apply x)
+    then show ?case by auto
+  qed  
+qed
+  
   
 theorem correctness: "execute (compile e) env = eval e env"
-  oops
+proof -
+  have "\<And>st. exec (compile e) st env = eval e env # st"
+  proof (induct e arbitrary: env)
+    case (Variable x)
+    then show ?case by simp
+  next
+    case (Constant x)
+    then show ?case by simp
+  next
+    case (Binop x1a e1 e2)
+    then show ?case by (simp add: exec_append)
+  qed
+  thus ?thesis by (simp add: execute_def)
+qed
 
 text \<open>
   \<^bigskip>
