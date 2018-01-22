@@ -18,9 +18,19 @@ text \<open>
 lemma de_Morgan:
   assumes "\<not> (\<forall>x. P x)"
   shows "\<exists>x. \<not> P x"
-  oops
-  
+proof (rule classical)
+  assume "\<nexists>x. \<not> P x"
+  hence "\<forall>x. P x" by blast
+  with assms show ?thesis by contradiction
+qed
+
 theorem Drinker's_Principle: "\<exists>x. drunk x \<longrightarrow> (\<forall>x. drunk x)"
-  oops
+proof (cases "\<forall>x. drunk x")
+  case True
+  then show ?thesis by blast
+next
+  case False
+  then show ?thesis by blast
+qed
   
 end
