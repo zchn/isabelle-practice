@@ -18,7 +18,20 @@ text \<open>
 \<close>
 
 theorem Cantor: "\<nexists>f :: 'a \<Rightarrow> 'a set. \<forall>A. \<exists>x. A = f x"
-  oops
+proof
+  assume "\<exists>f :: 'a \<Rightarrow> 'a set. \<forall>A. \<exists>x. A = f x"
+  then obtain f :: "'a \<Rightarrow> 'a set" where *: "\<forall>A. \<exists>x. A = f x" ..
+  let ?notin = "{x. x \<notin> f x}"
+  from * obtain a where mem: "?notin = f a" by blast
+  thus False
+  proof (cases "a \<in> ?notin")
+    case True
+    then show ?thesis using mem by blast
+  next
+    case False
+    then show ?thesis using mem by blast
+  qed
+qed
 
 subsection \<open>Automated proofs\<close>
 
@@ -28,11 +41,13 @@ text \<open>
 \<close>
 
 theorem "\<nexists>f :: 'a \<Rightarrow> 'a set. \<forall>A. \<exists>x. f x = A"
-  oops
+  by best
 
 theorem "\<nexists>f :: 'a \<Rightarrow> 'a set. \<forall>A. \<exists>x. f x = A"
-  oops
+  by force
 
+theorem "\<nexists>f :: 'a \<Rightarrow> 'a set. \<forall>A. \<exists>x. f x = A"
+  by bestsimp
 
 subsection \<open>Elementary version in higher-order predicate logic\<close>
 
@@ -45,10 +60,26 @@ text \<open>
 lemma iff_contradiction:
   assumes *: "\<not> A \<longleftrightarrow> A"
   shows False
-  oops
+proof (rule notE)
+  show "\<not>A"
+  proof
+    assume A
+    with * have "\<not>A" ..
+    thus False using \<open>A\<close> ..
+  qed
+  with * show A ..
+qed
   
 theorem Cantor': "\<nexists>f :: 'a \<Rightarrow> 'a \<Rightarrow> bool. \<forall>A. \<exists>x. A = f x"
-  oops
+proof
+  assume "\<exists>f :: 'a \<Rightarrow> 'a \<Rightarrow> bool. \<forall>A. \<exists>x. A = f x"
+  then obtain f :: "'a \<Rightarrow> 'a \<Rightarrow> bool" where *: "\<forall>A. \<exists>x. A = f x" ..
+  let ?notin_f = "\<lambda>x. \<not>f x x"
+  from * have "\<exists>x. ?notin_f = f x" ..
+  then obtain a where "?notin_f = f a" ..
+  then have "\<not> f a a \<longleftrightarrow> f a a" by (rule arg_cong)
+  thus False by (rule iff_contradiction)
+qed
 
 subsection \<open>Classic Isabelle/HOL example\<close>
 
@@ -75,8 +106,28 @@ text \<open>
 \<close>
 
 theorem "\<exists>S. S \<notin> range (f :: 'a \<Rightarrow> 'a set)"
-  oops
-  
+proof
+  let ?S = "{x. x \<notin> f x}"
+  show "?S \<notin> range f"
+  proof
+    assume "?S \<in> range f"
+    then obtain y where "?S = f y" ..
+    thus False
+    proof (rule equalityCE)
+      assume c1: "y \<in> f y"
+      assume "y \<in> ?S"
+      hence "y \<notin> f y" ..
+      with c1 show False by contradiction
+    next
+      assume c2: "y \<notin> ?S"
+      assume "y \<notin> f y"
+      hence "y \<in> ?S" ..
+      with c2 show False by contradiction
+    qed
+  qed
+qed
+
+
 text \<open>
   How much creativity is required? As it happens, Isabelle can prove this
   theorem automatically using best-first search. Depth-first search would
@@ -86,6 +137,6 @@ text \<open>
 \<close>
 
 theorem "\<exists>S. S \<notin> range (f :: 'a \<Rightarrow> 'a set)"
-  oops
+  by best
 
 end
