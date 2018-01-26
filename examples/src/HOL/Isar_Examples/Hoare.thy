@@ -45,15 +45,15 @@ primrec Sem :: "'a com \<Rightarrow> 'a sem"
   | "Sem (Cond b c1 c2) s s' \<longleftrightarrow> (if s \<in> b then Sem c1 s s' else Sem c2 s s')"
   | "Sem (While b x c) s s' \<longleftrightarrow> (\<exists>n. iter n b (Sem c) s s')"
 
-definition Valid :: "'a bexp \<Rightarrow> 'a com \<Rightarrow> 'a bexp \<Rightarrow> bool"  ("(3\<turnstile> _/ (2_)/ _)" [100, 55, 100] 50)
+definition Valid :: "'a bexp \<Rightarrow> 'a com \<Rightarrow> 'a bexp \<Rightarrow> bool"  
+  ("(3\<turnstile> _/ (2_)/ _)" [100, 55, 100] 50)
   where "\<turnstile> P c Q \<longleftrightarrow> (\<forall>s s'. Sem c s s' \<longrightarrow> s \<in> P \<longrightarrow> s' \<in> Q)"
 
 lemma ValidI [intro?]: "(\<And>s s'. Sem c s s' \<Longrightarrow> s \<in> P \<Longrightarrow> s' \<in> Q) \<Longrightarrow> \<turnstile> P c Q"
-  oops
+  by (simp add: Valid_def)
 
 lemma ValidD [dest?]: "\<turnstile> P c Q \<Longrightarrow> Sem c s s' \<Longrightarrow> s \<in> P \<Longrightarrow> s' \<in> Q"
-  oops
-
+  by (simp add: Valid_def)
 
 subsection \<open>Primitive Hoare rules\<close>
 
@@ -70,7 +70,13 @@ text \<open>
 \<close>
 
 theorem basic: "\<turnstile> {s. f s \<in> P} (Basic f) P"
-  oops
+proof
+  fix s s'
+  assume a: \<open>s \<in> {s. f s \<in> P}\<close>
+  assume \<open>Sem (Basic f) s s'\<close>
+  hence \<open>s' = f s\<close> by simp
+  thus \<open>s' \<in> P\<close> using a by simp
+qed
 
 text \<open>
   The rules for sequential commands and semantic consequences are established
@@ -78,10 +84,31 @@ text \<open>
 \<close>
 
 theorem seq: "\<turnstile> P c1 Q \<Longrightarrow> \<turnstile> Q c2 R \<Longrightarrow> \<turnstile> P (c1; c2) R"
-  oops
+proof
+  fix s s'
+  assume a1: "\<turnstile> P c1 Q"
+  assume a2: "\<turnstile> Q c2 R"
+  assume a4: "Sem (c1; c2) s s'"
+  assume a3: "s \<in> P"
+  from a4 obtain s'' where o1: "Sem c1 s s'' \<and> Sem c2 s'' s'" by auto
+  from o1 have "Sem c1 s s''" by (rule conjunct1)
+  hence s: "s'' \<in> Q" using a1 a3 by (simp add: ValidD)
+  from o1 have "Sem c2 s'' s'" by (rule conjunct2)
+  thus "s' \<in> R" using a2 s by (simp add: ValidD)
+qed
 
 theorem conseq: "P' \<subseteq> P \<Longrightarrow> \<turnstile> P c Q \<Longrightarrow> Q \<subseteq> Q' \<Longrightarrow> \<turnstile> P' c Q'"
-  oops
+proof
+  fix s s'
+  assume a1: "P' \<subseteq> P"
+  assume a2: "\<turnstile> P c Q"
+  assume a3: "Q \<subseteq> Q'"
+  assume a4: "Sem c s s'"
+  assume a5: "s \<in> P'"
+  from a1 a5 have b1: "s \<in> P" by auto
+  from a2 a4 b1 have b2: "s' \<in> Q" by (simp add: ValidD)
+  from b2 a3 show b3: "s' \<in> Q'" by auto
+qed
 
 text \<open>
   The rule for conditional commands is directly reflected by the corresponding
@@ -92,7 +119,23 @@ theorem cond:
   assumes case_b: "\<turnstile> (P \<inter> b) c1 Q"
     and case_nb: "\<turnstile> (P \<inter> -b) c2 Q"
   shows "\<turnstile> P (Cond b c1 c2) Q"
-  oops
+proof
+  fix s s'
+  assume a1: "Sem (Cond b c1 c2) s s'"
+  assume a2: "s \<in> P"
+  show "s' \<in> Q"
+  proof (cases "s \<in> b")
+    case True
+    from a1 have "Sem c1 s s'" by (simp add: True)
+    then show ?thesis 
+      using True ValidD a2 case_b by fastforce 
+  next
+    case False
+    from a1 have "Sem c2 s s'" by (simp add: False)
+    then show ?thesis
+      using False ValidD a2 case_nb by fastforce 
+  qed
+qed  
 
 text \<open>
   The \<open>while\<close> rule is slightly less trivial --- it is the only one based on
