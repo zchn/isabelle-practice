@@ -148,8 +148,24 @@ text \<open>
 theorem while:
   assumes body: "\<turnstile> (P \<inter> b) c P"
   shows "\<turnstile> P (While b X c) (P \<inter> -b)"
-  oops
-
+proof 
+  fix s s'
+  assume a1: "Sem (While b X c) s s'"
+  assume a2: "s \<in> P"
+  from a1 obtain n where o1: "iter n b (Sem c) s s'" by auto
+  thus "s' \<in> P \<inter> -b" using a2
+  proof (induct n arbitrary: s)
+    case 0
+    then show ?case by auto
+  next
+    case (Suc n)
+    then obtain s'' where o2: "s \<in> b"
+      and o3: "(Sem c) s s''" and o4: "iter n b (Sem c) s'' s'" by auto
+    from Suc and o2 have "s \<in> P \<inter> b" by simp
+    from this body o3 have "s'' \<in> P" by (simp add:ValidD)
+    with o4 show ?case by (rule Suc)
+  qed
+qed
 
 subsection \<open>Concrete syntax for assertions\<close>
 
@@ -247,29 +263,40 @@ text \<open>
 \<close>
 
 lemma [trans]: "\<turnstile> P c Q \<Longrightarrow> P' \<subseteq> P \<Longrightarrow> \<turnstile> P' c Q"
-  oops
+proof
+  fix s s'
+  assume a1: "\<turnstile> P c Q"
+  assume a2: "P' \<subseteq> P"
+  assume a3: "Sem c s s'"
+  assume a4: "s \<in> P'"
+  from a2 a4 have "s \<in> P" by auto
+  with a1 a3 show "s' \<in> Q" by (simp add: ValidD)
+qed
+
 lemma [trans] : "P' \<subseteq> P \<Longrightarrow> \<turnstile> P c Q \<Longrightarrow> \<turnstile> P' c Q"
-  oops
+  by (unfold Valid_def) blast
 
 lemma [trans]: "Q \<subseteq> Q' \<Longrightarrow> \<turnstile> P c Q \<Longrightarrow> \<turnstile> P c Q'"
-  oops
+  by (unfold Valid_def) blast
+
 lemma [trans]: "\<turnstile> P c Q \<Longrightarrow> Q \<subseteq> Q' \<Longrightarrow> \<turnstile> P c Q'"
-  oops
+  by (unfold Valid_def) blast
 
 lemma [trans]:
     "\<turnstile> \<lbrace>\<acute>P\<rbrace> c Q \<Longrightarrow> (\<And>s. P' s \<longrightarrow> P s) \<Longrightarrow> \<turnstile> \<lbrace>\<acute>P'\<rbrace> c Q"
-  oops
+  by (unfold Valid_def) blast
+
 lemma [trans]:
     "(\<And>s. P' s \<longrightarrow> P s) \<Longrightarrow> \<turnstile> \<lbrace>\<acute>P\<rbrace> c Q \<Longrightarrow> \<turnstile> \<lbrace>\<acute>P'\<rbrace> c Q"
-  oops
+  by (unfold Valid_def) blast
 
 lemma [trans]:
     "\<turnstile> P c \<lbrace>\<acute>Q\<rbrace> \<Longrightarrow> (\<And>s. Q s \<longrightarrow> Q' s) \<Longrightarrow> \<turnstile> P c \<lbrace>\<acute>Q'\<rbrace>"
-  oops
+  by (unfold Valid_def) blast
+
 lemma [trans]:
     "(\<And>s. Q s \<longrightarrow> Q' s) \<Longrightarrow> \<turnstile> P c \<lbrace>\<acute>Q\<rbrace> \<Longrightarrow> \<turnstile> P c \<lbrace>\<acute>Q'\<rbrace>"
-  oops
-
+  by (unfold Valid_def) blast
 
 text \<open>
   Identity and basic assignments.\<^footnote>\<open>The \<open>hoare\<close> method introduced in
@@ -278,10 +305,13 @@ text \<open>
 \<close>
 
 lemma skip [intro?]: "\<turnstile> P SKIP P"
-  oops
+proof -
+  have "\<turnstile> {s. id s \<in> P} SKIP P" by (rule basic)
+  thus ?thesis by simp
+qed
 
 lemma assign: "\<turnstile> P [\<acute>a/\<acute>x::'a] \<acute>x := \<acute>a P"
-  oops
+  by (rule basic)
 
 text \<open>
   Note that above formulation of assignment corresponds to our preferred way
@@ -303,7 +333,7 @@ text \<open>
 lemmas [trans, intro?] = seq
 
 lemma seq_assoc [simp]: "\<turnstile> P c1;(c2;c3) Q \<longleftrightarrow> \<turnstile> P (c1;c2);c3 Q"
-  oops
+  by (auto simp add: Valid_def)
 
 text \<open>Conditional statements.\<close>
 
@@ -313,26 +343,25 @@ lemma [trans, intro?]:
   "\<turnstile> \<lbrace>\<acute>P \<and> \<acute>b\<rbrace> c1 Q
       \<Longrightarrow> \<turnstile> \<lbrace>\<acute>P \<and> \<not> \<acute>b\<rbrace> c2 Q
       \<Longrightarrow> \<turnstile> \<lbrace>\<acute>P\<rbrace> IF \<acute>b THEN c1 ELSE c2 FI Q"
-    oops
+    by (rule cond) (simp_all add: Valid_def)
 
 text \<open>While statements --- with optional invariant.\<close>
 
 lemma [intro?]: "\<turnstile> (P \<inter> b) c P \<Longrightarrow> \<turnstile> P (While b P c) (P \<inter> -b)"
-  oops
+  by (rule while)
 
 lemma [intro?]: "\<turnstile> (P \<inter> b) c P \<Longrightarrow> \<turnstile> P (While b undefined c) (P \<inter> -b)"
-  oops
-
+  by (rule while)
 
 lemma [intro?]:
   "\<turnstile> \<lbrace>\<acute>P \<and> \<acute>b\<rbrace> c \<lbrace>\<acute>P\<rbrace>
     \<Longrightarrow> \<turnstile> \<lbrace>\<acute>P\<rbrace> WHILE \<acute>b INV \<lbrace>\<acute>P\<rbrace> DO c OD \<lbrace>\<acute>P \<and> \<not> \<acute>b\<rbrace>"
-  oops
+  by (simp add: while Collect_conj_eq Collect_neg_eq)
 
 lemma [intro?]:
   "\<turnstile> \<lbrace>\<acute>P \<and> \<acute>b\<rbrace> c \<lbrace>\<acute>P\<rbrace>
     \<Longrightarrow> \<turnstile> \<lbrace>\<acute>P\<rbrace> WHILE \<acute>b DO c OD \<lbrace>\<acute>P \<and> \<not> \<acute>b\<rbrace>"
-  oops
+  by (simp add: while Collect_conj_eq Collect_neg_eq)
 
 
 subsection \<open>Verification conditions \label{sec:hoare-vcg}\<close>
@@ -350,30 +379,49 @@ text \<open>
 \<close>
 
 lemma SkipRule: "p \<subseteq> q \<Longrightarrow> Valid p (Basic id) q"
-  oops
+  by (auto simp add: Valid_def)
 
 lemma BasicRule: "p \<subseteq> {s. f s \<in> q} \<Longrightarrow> Valid p (Basic f) q"
-  oops
+  by (auto simp add: Valid_def)
 
 lemma SeqRule: "Valid P c1 Q \<Longrightarrow> Valid Q c2 R \<Longrightarrow> Valid P (c1;c2) R"
-  oops
+  by (auto simp add: Valid_def)
 
 lemma CondRule:
   "p \<subseteq> {s. (s \<in> b \<longrightarrow> s \<in> w) \<and> (s \<notin> b \<longrightarrow> s \<in> w')}
     \<Longrightarrow> Valid w c1 q \<Longrightarrow> Valid w' c2 q \<Longrightarrow> Valid p (Cond b c1 c2) q"
-  oops
+  by (auto simp add: Valid_def)
 
 lemma iter_aux:
   "\<forall>s s'. Sem c s s' \<longrightarrow> s \<in> I \<and> s \<in> b \<longrightarrow> s' \<in> I \<Longrightarrow>
        (\<And>s s'. s \<in> I \<Longrightarrow> iter n b (Sem c) s s' \<Longrightarrow> s' \<in> I \<and> s' \<notin> b)"
-  oops
+proof (induct n)
+  case 0
+  then show ?case by auto
+next
+  case (Suc n)
+  then show ?case by auto
+qed
 
 lemma WhileRule:
     "p \<subseteq> i \<Longrightarrow> Valid (i \<inter> b) c i \<Longrightarrow> i \<inter> (-b) \<subseteq> q \<Longrightarrow> Valid p (While b i c) q"
-  oops
+proof
+  fix s s'
+  assume a1: "p \<subseteq> i"
+  assume a2: "\<turnstile> (i \<inter> b) c i"
+  assume a3: "i \<inter> - b \<subseteq> q"
+  assume a4: "Sem (While b i c) s s'"
+  assume a5: "s \<in> p"
+  with a1 have h1: "s \<in> i" by auto
+  from a4 obtain n where o1: "iter n b (Sem c) s s'" using Sem_def by auto
+  from a2 have "\<forall>s s'. Sem c s s' \<longrightarrow> s \<in> i \<and> s \<in> b \<longrightarrow> s' \<in> i" 
+    by (simp add: ValidD)
+  with h1 o1 have "s' \<in> i \<and> s' \<notin> b" by (meson iter_aux)
+  thus "s' \<in> q" using a3 by auto
+qed
 
 lemma Compl_Collect: "- Collect b = {x. \<not> b x}"
-  oops
+  by auto
 
 lemmas AbortRule = SkipRule  \<comment> "dummy version"
 
