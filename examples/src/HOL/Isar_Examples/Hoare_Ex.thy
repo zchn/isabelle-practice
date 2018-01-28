@@ -99,14 +99,25 @@ text \<open>
 \<close>
 
 lemma "\<turnstile> \<lbrace>\<acute>M = \<acute>N\<rbrace> \<acute>M := \<acute>M + 1 \<lbrace>\<acute>M \<noteq> \<acute>N\<rbrace>"
-  oops
+proof -
+  have "\<lbrace>\<acute>M = \<acute>N\<rbrace> \<subseteq> \<lbrace>\<acute>M + 1 \<noteq> \<acute>N\<rbrace>"
+    by auto
+  thus ?thesis by hoare
+qed
 
 lemma "\<turnstile> \<lbrace>\<acute>M = \<acute>N\<rbrace> \<acute>M := \<acute>M + 1 \<lbrace>\<acute>M \<noteq> \<acute>N\<rbrace>"
-  oops
+proof -
+  have "m = n \<longrightarrow> m + 1 \<noteq> n" for m n :: nat
+      \<comment> \<open>inclusion of assertions expressed in ``pure'' logic,\<close>
+      \<comment> \<open>without mentioning the state space\<close>
+    by simp
+  also have "\<turnstile> \<lbrace>\<acute>M + 1 \<noteq> \<acute>N\<rbrace> \<acute>M := \<acute>M + 1 \<lbrace>\<acute>M \<noteq> \<acute>N\<rbrace>"
+    by hoare
+  finally show ?thesis .
+qed
 
 lemma "\<turnstile> \<lbrace>\<acute>M = \<acute>N\<rbrace> \<acute>M := \<acute>M + 1 \<lbrace>\<acute>M \<noteq> \<acute>N\<rbrace>"
   by hoare simp
-
 
 subsection \<open>Multiplication by addition\<close>
 
@@ -122,7 +133,22 @@ lemma
       WHILE \<acute>M \<noteq> a
       DO \<acute>S := \<acute>S + b; \<acute>M := \<acute>M + 1 OD
       \<lbrace>\<acute>S = a * b\<rbrace>"
-  oops
+proof -
+  let "\<turnstile> _ ?while _" = ?thesis
+  let "\<lbrace>\<acute>?inv\<rbrace>" = "\<lbrace>\<acute>S = \<acute>M * b\<rbrace>"
+  have "\<lbrace>\<acute>M = 0 \<and> \<acute>S = 0\<rbrace> \<subseteq> \<lbrace>\<acute>?inv\<rbrace>" by auto
+  also have "\<turnstile> \<dots> ?while \<lbrace>\<acute>?inv \<and> \<not> (\<acute>M \<noteq> a)\<rbrace>"
+  proof
+    let ?c = "\<acute>S := \<acute>S + b; \<acute>M := \<acute>M + 1"
+    have "\<turnstile> \<lbrace>\<acute>S + b = (\<acute>M + 1) * b\<rbrace> ?c \<lbrace>\<acute>S = \<acute>M * b\<rbrace>" by hoare
+    also have "\<lbrace>\<acute>?inv \<and> \<acute>M \<noteq> a\<rbrace> \<subseteq> \<lbrace>\<acute>S + b = (\<acute>M + 1) * b\<rbrace>"
+      by auto
+    finally show "\<turnstile> \<lbrace>\<acute>?inv \<and> \<acute>M \<noteq> a\<rbrace> ?c \<lbrace>\<acute>?inv\<rbrace>" .
+  qed
+  also have "\<lbrace>\<acute>?inv \<and> \<not> (\<acute>M \<noteq> a)\<rbrace> \<subseteq> \<lbrace>\<acute>S = a * b\<rbrace>" by auto
+  finally show ?thesis by auto
+qed
+
 
 text \<open>
   The subsequent version of the proof applies the \<open>hoare\<close> method to reduce the
@@ -163,7 +189,22 @@ theorem
       OD
       \<lbrace>\<acute>S = (\<Sum>j<n. j)\<rbrace>"
   (is "\<turnstile> _ (_; ?while) _")
-  oops
+proof -
+  let "\<lbrace>\<acute>?inv\<rbrace>" = "\<lbrace>\<acute>S = (\<Sum>j<\<acute>I. j)\<rbrace>"
+  let "\<lbrace>\<acute>?b\<rbrace>" = "\<lbrace>\<acute>I \<noteq> n\<rbrace>"
+  have "\<turnstile> \<lbrace>True\<rbrace> \<acute>S := 0; \<acute>I := 1 \<lbrace>\<acute>S = 0 \<and> \<acute>I = 1\<rbrace>" by hoare
+  also have "\<lbrace>\<acute>S = 0 \<and> \<acute>I = 1\<rbrace> \<subseteq> \<lbrace>\<acute>?inv\<rbrace>" by auto
+  also have "\<turnstile> \<lbrace>\<acute>?inv\<rbrace> ?while \<lbrace>\<acute>?inv\<and> \<not>\<acute>?b \<rbrace>"
+  proof
+    let ?c = "\<acute>S := \<acute>S + \<acute>I; \<acute>I := \<acute>I + 1"
+    have "\<turnstile> \<lbrace>\<acute>S + \<acute>I = (\<Sum>j<(\<acute>I + 1). j)\<rbrace> ?c \<lbrace>\<acute>?inv\<rbrace>" by hoare
+    also have "\<lbrace>\<acute>?inv \<and> \<acute>?b\<rbrace> \<subseteq> \<lbrace>\<acute>S + \<acute>I = (\<Sum>j<(\<acute>I + 1). j)\<rbrace>"
+      by auto
+    finally show "\<turnstile> \<lbrace>\<acute>?inv \<and> \<acute>?b\<rbrace> ?c \<lbrace>\<acute>?inv\<rbrace>" by auto
+  qed
+  also have "\<lbrace>\<acute>?inv\<and> \<not>\<acute>?b \<rbrace> \<subseteq> \<lbrace>\<acute>S = (\<Sum>j<n. j)\<rbrace>" by auto
+  finally show ?thesis by auto
+qed
 
 text \<open>
   The next version uses the \<open>hoare\<close> method, while still explaining the
@@ -180,7 +221,15 @@ theorem
         \<acute>I := \<acute>I + 1
       OD
       \<lbrace>\<acute>S = (\<Sum>j<n. j)\<rbrace>"
-  oops
+proof hoare
+  let ?sum = "\<lambda>k::nat. \<Sum>j<k. j"
+  let ?inv = "\<lambda>s i::nat. s = ?sum i"
+  show "?inv 0 1" by simp
+  show "?inv (s + i) (i + 1)" if "?inv s i \<and> i \<noteq> n" for s i
+    using that by simp
+  show "s = ?sum n" if "?inv s i \<and> \<not> i \<noteq> n" for s i
+    using that by simp
+qed
 
 text \<open>
   Certainly, this proof may be done fully automatic as well, provided that the
@@ -238,6 +287,17 @@ lemma
           \<acute>I := \<acute>I - 1
         OD))
     \<lbrace>2 * \<acute>time = i * i + 5 * i\<rbrace>"
-  oops
+  apply simp
+  apply hoare
+      apply simp
+     apply clarsimp
+    apply clarsimp
+   apply arith
+   prefer 2
+   apply clarsimp
+  apply (clarsimp simp: nat_distrib)
+  apply (frule lem)
+  apply arith
+  done
 
 end
